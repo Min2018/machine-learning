@@ -6,6 +6,7 @@ import operator
 from os import listdir
 import matplotlib
 import matplotlib.pylab as plt
+from os import listdir
 
 
 a = random.rand(4, 4)  # 创建4*4数组
@@ -80,7 +81,7 @@ def autoNorm(dataSet):
 
 
 # 2.2.4 测试算法
-def datingClassTest(numTestVecs, normMat, m, k):
+def datingClassTest(numTestVecs, normMat, datingLabels, m, k):
     errorCount = 0.0
     for i in range(numTestVecs):
         inX = normMat[i, :]
@@ -90,7 +91,7 @@ def datingClassTest(numTestVecs, normMat, m, k):
         if classifierResult != datingLabels[i]:
             errorCount += 1.0
         # print("the total error rate is: %f" % (errorCount / float(numTestVecs)))
-    errorRate = errorCount / float(numTestVecs)
+    errorRate = errorCount / float(m - numTestVecs)
     # print(errorCount, errorRate)
     return errorRate
 
@@ -108,7 +109,7 @@ def ChoiceBestK():
     errorRateDict = {}
     numTestVecs = int(m * hoRatio)
     for k in range(1, maxK):
-        errorRate = datingClassTest(numTestVecs, normMat, m, k)
+        errorRate = datingClassTest(numTestVecs, normMat, datingLabels, m, k)
         errorRateDict[k] = errorRate
     # print(errorRateDict)
     errorRatesorted = sorted(errorRateDict.items(), key=operator.itemgetter(1), reverse=False)
@@ -136,3 +137,63 @@ if __name__ == '__main__':
 
 
 # 2.3  手写识别系统》》示例
+def imgVector(DATAPATH, fileName):
+    fr = open(DATAPATH + fileName)
+    returnVect = zeros((1, 1024))
+    for i in range(32):
+        lineStr = fr.readline()
+        for j in range(32):
+            returnVect[0, 32*i+j] = lineStr[j]
+    return returnVect
+
+
+# 测试算法
+def handWritingClassTest(trainingDataPath, testDataPath, k):
+    trainingFileList = listdir(trainingDataPath)
+    m = len(trainingFileList)
+    hwLabels = []
+    trainingMat = zeros((m, 1024))
+    for i in range(m):
+        fileNameStr = trainingFileList[i]
+        classNum = int(fileNameStr.split(',')[0].split('_')[0])
+        hwLabels.append(classNum)
+        trainingMat[i, :] = imgVector(trainingDataPath, fileNameStr)
+    testFileList = listdir(testDataPath)
+    mTset = len(testFileList)
+    errorCount = 0
+    for i in range(mTset):
+        fileNameStr = testFileList[i]
+        classNum = int(fileNameStr.split(',')[0].split('_')[0])
+        inX = imgVector(testDataPath, fileNameStr)
+        classifierResult = classify(inX, trainingMat, hwLabels, k)
+        print('用户被识别为：', classifierResult, '  用户被识别为：', classNum)
+        if classifierResult != classNum:
+            errorCount += 1
+        errorRate = errorCount/mTset
+        print('分类错误数：', errorCount, ' 分类错误率：', errorRate)
+    return k, errorRate
+
+
+# 选取误差最小的k作为最优k值
+def ChoiceBestK(trainingDataPath, testDataPath):
+    testFileList = listdir(trainingDataPath)
+    mTrain = len(trainingDataPath)
+    errorRateDict = {}
+    for k in range(1, int(floor(mTrain/2))):
+        k, errorRate = handWritingClassTest(trainingDataPath, testDataPath, k)
+        errorRateDict[k] = errorRate
+    errorRatesorted = sorted(errorRateDict.items(), key=operator.itemgetter(1), reverse=False)
+    bestKvalue = errorRatesorted[0][0]
+    bestErrorRate = errorRatesorted[0][1]
+    return bestKvalue, bestErrorRate
+
+
+if __name__ == '__main__':
+    trainingDataPath = '/Users/min/Documents/GitHub/machine-learning/machinelearninginaction/Ch02/digits/trainingDigits/'
+    testDataPath = '/Users/min/Documents/GitHub/machine-learning/machinelearninginaction/Ch02/digits/testDigits/'
+    bestKvalue, bestErrorRate = ChoiceBestK(trainingDataPath, testDataPath)
+    handWritingClassTest(trainingDataPath, testDataPath, bestKvalue)
+    print('bestKvalue:', bestKvalue)
+
+
+
