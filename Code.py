@@ -76,7 +76,7 @@ def autoNorm(dataSet):
     valDiff = maxVals - minVals
     normDataSet = dataSet - tile(minVals, (dataSet.shape[0], 1))
     normDataSet = normDataSet / tile(valDiff, (dataSet.shape[0], 1))
-    return normDataSet
+    return minVals, valDiff, normDataSet
 
 
 # 2.2.4 测试算法
@@ -96,10 +96,12 @@ def datingClassTest(numTestVecs, normMat, m, k):
 
 
 # 优化k取值，取误差最小的k
-def ChoiceBestK(DATAPATH, filename):
-    hoRatio = 0.90  # hold out 10%
+def ChoiceBestK():
+    DATAPATH = '/Users/min/Documents/GitHub/machine-learning/machinelearninginaction/Ch02/'
+    filename = 'datingTestSet2.txt'
+    hoRatio = 0.10  # hold out 10%
     dataDatingMat, datingLabels = file2matrix(DATAPATH, filename)
-    normMat = autoNorm(dataDatingMat)
+    minVals, valDiff, normMat = autoNorm(dataDatingMat)
     m = normMat.shape[0]
     numTestVecs = int(m * hoRatio)
     maxK = m - numTestVecs
@@ -110,11 +112,27 @@ def ChoiceBestK(DATAPATH, filename):
         errorRateDict[k] = errorRate
     # print(errorRateDict)
     errorRatesorted = sorted(errorRateDict.items(), key=operator.itemgetter(1), reverse=False)
-    return errorRatesorted[0][0], errorRatesorted[0][1]
+    bestKvalue = errorRatesorted[0][0]
+    bestErrorRate = errorRatesorted[0][1]
+    return bestKvalue, bestErrorRate
 
 
-DATAPATH = '/Users/min/Documents/GitHub/machine-learning/machinelearninginaction/Ch02/'
-filename = 'datingTestSet2.txt'
-bestKvalue, bestErrorRate = ChoiceBestK(DATAPATH, filename)
+def classifyPerson():
+    resultList = ['not at all', 'in small doses', 'in large doses']
+    percentTats = float(input("percentage of time spent playing video games?"))
+    ffMiles = float(input("frequent flier miles earned per year?"))
+    iceCream = float(input("liters of ice cream consumed per year?"))
+    inX = array([percentTats, ffMiles, iceCream])
+    minVals, valDiff, normMat = autoNorm(dataDatingMat)
+    bestKvalue, bestErrorRate = ChoiceBestK()
+    classifierResult = classify((inX - minVals)/valDiff, normMat, datingLabels, bestKvalue)
+    print('You will probably like this person : ', resultList[classifierResult - 1])
 
 
+# 测试分类器
+if __name__ == '__main__':
+    bestKvalue, bestErrorRate = ChoiceBestK()
+    classifyPerson()
+
+
+# 2.3  手写识别系统》》示例
